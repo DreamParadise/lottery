@@ -1,24 +1,16 @@
-import "./index.css";
-import "../css/animate.min.css";
-import "./canvas.js";
-import {
-  addQipao,
-  setPrizes,
-  showPrizeList,
-  setPrizeData,
-  resetPrize
-} from "./prizeList";
-import { NUMBER_MATRIX } from "./config.js";
+import './index.css';
+import '../css/animate.min.css';
+import './canvas.js';
+import { addQipao, setPrizes, showPrizeList, setPrizeData, resetPrize } from './prizeList';
+import { NUMBER_MATRIX } from './config.js';
 
 const ROTATE_TIME = 3000;
-const ROTATE_LOOP = 1000;
 const BASE_HEIGHT = 1080;
 
 let TOTAL_CARDS,
   btns = {
-    enter: document.querySelector("#enter"),
-    lotteryBar: document.querySelector("#lotteryBar"),
-    lottery: document.querySelector("#lottery")
+    enter: document.querySelector('#enter'),
+    lotteryBar: document.querySelector('#lotteryBar'),
   },
   prizes,
   EACH_COUNT,
@@ -36,18 +28,17 @@ let camera,
   threeDCards = [],
   targets = {
     table: [],
-    sphere: []
+    sphere: [],
   };
 
-let rotateObj;
-
 let selectedCardIndex = [],
+  tweenRotate,
   rotate = false,
   basicData = {
     prizes: [], //奖品信息
     users: [], //所有人员
     luckyUsers: {}, //已中奖人员
-    leftUsers: [] //未中奖人员
+    leftUsers: [], //未中奖人员
   },
   interval,
   // 当前抽的奖项，从最低奖开始抽，直到抽到大奖
@@ -64,7 +55,7 @@ initAll();
  */
 function initAll() {
   window.AJAX({
-    url: "/getTempData",
+    url: '/getTempData',
     success(data) {
       // 获取基础数据
       prizes = data.cfgData.prizes;
@@ -82,11 +73,7 @@ function initAll() {
 
       let prizeIndex = basicData.prizes.length - 1;
       for (; prizeIndex > -1; prizeIndex--) {
-        if (
-          data.luckyData[prizeIndex] &&
-          data.luckyData[prizeIndex].length >=
-            basicData.prizes[prizeIndex].count
-        ) {
+        if (data.luckyData[prizeIndex] && data.luckyData[prizeIndex].length >= basicData.prizes[prizeIndex].count) {
           continue;
         }
         currentPrizeIndex = prizeIndex;
@@ -97,11 +84,11 @@ function initAll() {
       showPrizeList(currentPrizeIndex);
       let curLucks = basicData.luckyUsers[currentPrize.type];
       setPrizeData(currentPrizeIndex, curLucks ? curLucks.length : 0, true);
-    }
+    },
   });
 
   window.AJAX({
-    url: "/getUsers",
+    url: '/getUsers',
     success(data) {
       basicData.users = data;
 
@@ -109,7 +96,7 @@ function initAll() {
       // startMaoPao();
       animate();
       shineCard();
-    }
+    },
   });
 }
 
@@ -124,28 +111,18 @@ function initCards() {
     totalMember = member.length,
     position = {
       x: (140 * COLUMN_COUNT - 20) / 2,
-      y: (180 * ROW_COUNT - 20) / 2
+      y: (180 * ROW_COUNT - 20) / 2,
     };
 
-  camera = new THREE.PerspectiveCamera(
-    40,
-    window.innerWidth / window.innerHeight,
-    1,
-    10000
-  );
+  camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
   camera.position.z = 3000;
 
   scene = new THREE.Scene();
 
   for (let i = 0; i < ROW_COUNT; i++) {
     for (let j = 0; j < COLUMN_COUNT; j++) {
-      isBold = HIGHLIGHT_CELL.includes(j + "-" + i);
-      var element = createCard(
-        member[index % length],
-        isBold,
-        index,
-        showTable
-      );
+      isBold = HIGHLIGHT_CELL.includes(j + '-' + i);
+      var element = createCard(member[index % length], isBold, index, showTable);
 
       var object = new THREE.CSS3DObject(element);
       object.position.x = Math.random() * 4000 - 2000;
@@ -179,7 +156,7 @@ function initCards() {
 
   renderer = new THREE.CSS3DRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  document.getElementById("container").appendChild(renderer.domElement);
+  document.getElementById('container').appendChild(renderer.domElement);
 
   //
 
@@ -187,14 +164,14 @@ function initCards() {
   controls.rotateSpeed = 0.5;
   controls.minDistance = 500;
   controls.maxDistance = 6000;
-  controls.addEventListener("change", render);
+  controls.addEventListener('change', render);
 
   bindEvent();
 
   if (showTable) {
-    switchScreen("enter");
+    switchScreen('enter');
   } else {
-    switchScreen("lottery");
+    switchScreen('lottery');
   }
 }
 
@@ -206,43 +183,36 @@ function setLotteryStatus(status = false) {
  * 事件绑定
  */
 function bindEvent() {
-  document.querySelector("#menu").addEventListener("click", function (e) {
+  document.querySelector('#menu').addEventListener('click', function (e) {
     e.stopPropagation();
     // 如果正在抽奖，则禁止一切操作
-    if (isLotting) {
-      if (e.target.id === "lottery") {
-        rotateObj.stop();
-        btns.lottery.innerHTML = "开始抽奖";
-      } else {
-        addQipao("抽慢一点点～～");
-      }
+    if (isLotting && e.target.innerText === '抽奖') {
+      addQipao('抽慢一点点～～');
       return false;
     }
 
-    let target = e.target.id;
+    const target = e.target.id;
     switch (target) {
       // 显示数字墙
-      case "welcome":
-        switchScreen("enter");
+      case 'welcome':
+        switchScreen('enter');
         rotate = false;
         break;
       // 进入抽奖
-      case "enter":
+      case 'enter':
         removeHighlight();
         addQipao(`马上抽取[${currentPrize.title}],不要走开。`);
         // rotate = !rotate;
         rotate = true;
-        switchScreen("lottery");
+        switchScreen('lottery');
         break;
       // 重置
-      case "reset":
-        let doREset = window.confirm(
-          "是否确认重置数据，重置后，当前已抽的奖项全部清空？"
-        );
+      case 'reset':
+        let doREset = window.confirm('是否确认重置数据，重置后，当前已抽的奖项全部清空？');
         if (!doREset) {
           return;
         }
-        addQipao("重置所有数据，重新抽奖");
+        addQipao('重置所有数据，重新抽奖');
         addHighlight();
         resetCard();
         // 重置所有数据
@@ -254,23 +224,71 @@ function bindEvent() {
 
         resetPrize(currentPrizeIndex);
         reset();
-        switchScreen("enter");
+        switchScreen('enter');
         break;
       // 抽奖
-      case "lottery":
-        setLotteryStatus(true);
-        // 每次抽奖前先保存上一次的抽奖数据
-        saveData();
-        //更新剩余抽奖数目的数据显示
-        changePrize();
-        resetCard().then(res => {
-          // 抽奖
-          lottery();
-        });
-        addQipao(`正在抽取[${currentPrize.title}],调整好姿势`);
+      case 'lottery':
+        if (e.target.innerText === '抽奖') {
+          setLotteryStatus(true);
+          // 每次抽奖前先保存上一次的抽奖数据
+          saveData();
+          //更新剩余抽奖数目的数据显示
+          changePrize();
+          resetCard().then(res => {
+            // 抽奖
+            // lottery();
+            lotteryNew();
+          });
+          e.target.innerText = '停止';
+          addQipao(`正在抽取[${currentPrize.title}],调整好姿势`);
+        } else {
+          if (tweenRotate != null) {
+            tweenRotate
+              .repeat(0)
+              // .easing(TWEEN.Easing.Exponential.InOut)
+              .onComplete(() => {
+                tweenRotate = null;
+                e.target.innerText = '抽奖';
+                // 将之前的记录置空
+                currentLuckys = [];
+                selectedCardIndex = [];
+                // 当前同时抽取的数目,当前奖品抽完还可以继续抽，但是不记录数据
+                let perCount = EACH_COUNT[currentPrizeIndex],
+                  luckyData = basicData.luckyUsers[currentPrize.type],
+                  leftCount = basicData.leftUsers.length,
+                  leftPrizeCount = currentPrize.count - (luckyData ? luckyData.length : 0);
+
+                if (leftCount < perCount) {
+                  addQipao('剩余参与抽奖人员不足，现在重新设置所有人员可以进行二次抽奖！');
+                  basicData.leftUsers = basicData.users.slice();
+                  leftCount = basicData.leftUsers.length;
+                }
+
+                for (let i = 0; i < perCount; i++) {
+                  let luckyId = random(leftCount);
+                  currentLuckys.push(basicData.leftUsers.splice(luckyId, 1)[0]);
+                  leftCount--;
+                  leftPrizeCount--;
+
+                  let cardIndex = random(TOTAL_CARDS);
+                  while (selectedCardIndex.includes(cardIndex)) {
+                    cardIndex = random(TOTAL_CARDS);
+                  }
+                  selectedCardIndex.push(cardIndex);
+
+                  if (leftPrizeCount === 0) {
+                    break;
+                  }
+                }
+
+                selectCard();
+              });
+            // tweenRotate.stop();
+          }
+        }
         break;
       // 重新抽奖
-      case "reLottery":
+      case 'reLottery':
         if (currentLuckys.length === 0) {
           addQipao(`当前还没有抽奖，无法重新抽取喔~~`);
           return;
@@ -286,7 +304,7 @@ function bindEvent() {
         });
         break;
       // 导出抽奖结果
-      case "save":
+      case 'save':
         saveData().then(res => {
           resetCard().then(res => {
             // 将之前的记录置空
@@ -299,19 +317,19 @@ function bindEvent() {
     }
   });
 
-  window.addEventListener("resize", onWindowResize, false);
+  window.addEventListener('resize', onWindowResize, false);
 }
 
 function switchScreen(type) {
   switch (type) {
-    case "enter":
-      btns.enter.classList.remove("none");
-      btns.lotteryBar.classList.add("none");
+    case 'enter':
+      btns.enter.classList.remove('none');
+      btns.lotteryBar.classList.add('none');
       transform(targets.table, 2000);
       break;
     default:
-      btns.enter.classList.add("none");
-      btns.lotteryBar.classList.remove("none");
+      btns.enter.classList.add('none');
+      btns.lotteryBar.classList.remove('none');
       transform(targets.sphere, 2000);
       break;
   }
@@ -321,9 +339,9 @@ function switchScreen(type) {
  * 创建元素
  */
 function createElement(css, text) {
-  let dom = document.createElement("div");
-  dom.className = css || "";
-  dom.innerHTML = text || "";
+  let dom = document.createElement('div');
+  dom.className = css || '';
+  dom.innerHTML = text || '';
   return dom;
 }
 
@@ -332,36 +350,35 @@ function createElement(css, text) {
  */
 function createCard(user, isBold, id, showTable) {
   var element = createElement();
-  element.id = "card-" + id;
+  element.id = 'card-' + id;
 
   if (isBold) {
-    element.className = "element lightitem";
+    element.className = 'element lightitem';
     if (showTable) {
-      element.classList.add("highlight");
+      element.classList.add('highlight');
     }
   } else {
-    element.className = "element";
-    element.style.backgroundColor =
-      "rgba(0,127,127," + (Math.random() * 0.7 + 0.25) + ")";
+    element.className = 'element';
+    element.style.backgroundColor = 'rgba(0,127,127,' + (Math.random() * 0.7 + 0.25) + ')';
   }
   //添加公司标识
-  element.appendChild(createElement("company", COMPANY));
+  element.appendChild(createElement('company', COMPANY));
 
-  element.appendChild(createElement("name", user[1]));
+  element.appendChild(createElement('name', user[1]));
 
-  element.appendChild(createElement("details", user[0] + "<br/>" + user[2]));
+  element.appendChild(createElement('details', user[0] + '<br/>' + user[2]));
   return element;
 }
 
 function removeHighlight() {
-  document.querySelectorAll(".highlight").forEach(node => {
-    node.classList.remove("highlight");
+  document.querySelectorAll('.highlight').forEach(node => {
+    node.classList.remove('highlight');
   });
 }
 
 function addHighlight() {
-  document.querySelectorAll(".lightitem").forEach(node => {
-    node.classList.add("highlight");
+  document.querySelectorAll('.lightitem').forEach(node => {
+    node.classList.add('highlight');
   });
 }
 
@@ -379,7 +396,7 @@ function transform(targets, duration) {
         {
           x: target.position.x,
           y: target.position.y,
-          z: target.position.z
+          z: target.position.z,
         },
         Math.random() * duration + duration
       )
@@ -391,13 +408,21 @@ function transform(targets, duration) {
         {
           x: target.rotation.x,
           y: target.rotation.y,
-          z: target.rotation.z
+          z: target.rotation.z,
         },
         Math.random() * duration + duration
       )
       .easing(TWEEN.Easing.Exponential.InOut)
       .start();
 
+    // new TWEEN.Tween(object.rotation)
+    //     .to({
+    //         x: target.rotation.x,
+    //         y: target.rotation.y,
+    //         z: target.rotation.z
+    //     }, Math.random() * duration + duration)
+    //     .easing(TWEEN.Easing.Exponential.InOut)
+    //     .start();
   }
 
   new TWEEN.Tween(this)
@@ -406,43 +431,33 @@ function transform(targets, duration) {
     .start();
 }
 
-// function rotateBall() {
-//   return new Promise((resolve, reject) => {
-//     scene.rotation.y = 0;
-//     new TWEEN.Tween(scene.rotation)
-//       .to(
-//         {
-//           y: Math.PI * 8
-//         },
-//         ROTATE_TIME
-//       )
-//       .onUpdate(render)
-//       .easing(TWEEN.Easing.Exponential.InOut)
-//       .start()
-//       .onComplete(() => {
-//         resolve();
-//       });
-//   });
-// }
+function rotateBallInfinity() {
+  scene.rotation.y = 0;
+  return new TWEEN.Tween(scene.rotation)
+    .to(
+      {
+        y: Math.PI * 8,
+      },
+      ROTATE_TIME
+    )
+    .repeat(Infinity)
+    .onUpdate(render)
+    .start();
+}
 
 function rotateBall() {
   return new Promise((resolve, reject) => {
     scene.rotation.y = 0;
-    rotateObj = new TWEEN.Tween(scene.rotation);
-    rotateObj
+    new TWEEN.Tween(scene.rotation)
       .to(
         {
-          y: Math.PI * 6 * ROTATE_LOOP
+          y: Math.PI * 8,
         },
-        ROTATE_TIME * ROTATE_LOOP
+        ROTATE_TIME
       )
       .onUpdate(render)
-      // .easing(TWEEN.Easing.Linear)
+      .easing(TWEEN.Easing.Exponential.InOut)
       .start()
-      .onStop(() => {
-        scene.rotation.y = 0;
-        resolve();
-      })
       .onComplete(() => {
         resolve();
       });
@@ -475,46 +490,32 @@ function render() {
 function selectCard(duration = 600) {
   rotate = false;
   let width = 140,
-    tag = -(currentLuckys.length - 1) / 2,
     locates = [];
 
-  // 计算位置信息, 大于5个分两排显示
-  if (currentLuckys.length > 5) {
-    let yPosition = [-87, 87],
-      l = selectedCardIndex.length,
-      mid = Math.ceil(l / 2);
-    tag = -(mid - 1) / 2;
-    for (let i = 0; i < mid; i++) {
+  // 每行最多卡牌数量，超出之后换行显示
+  let maxCardCountPerRow = 7;
+  let cardRowCount = 1;
+  while (Math.ceil(selectedCardIndex.length / cardRowCount) > 7) {
+    cardRowCount++;
+  }
+  maxCardCountPerRow = Math.ceil(selectedCardIndex.length / cardRowCount);
+  const actualCardCountPerRow = selectedCardIndex.length < maxCardCountPerRow ? selectedCardIndex.length : maxCardCountPerRow;
+  const cardHeight = 174;
+  const yPositionStart = ((cardRowCount - 1) / 2) * cardHeight;
+  for (let row = 0; row < cardRowCount; row++) {
+    for (let column = 0; column < actualCardCountPerRow; column++) {
       locates.push({
-        x: tag * width * Resolution,
-        y: yPosition[0] * Resolution
+        x: (-((actualCardCountPerRow - 1) / 2) + column) * width * Resolution,
+        y: (yPositionStart - row * cardHeight) * Resolution,
       });
-      tag++;
-    }
-
-    tag = -(l - mid - 1) / 2;
-    for (let i = mid; i < l; i++) {
-      locates.push({
-        x: tag * width * Resolution,
-        y: yPosition[1] * Resolution
-      });
-      tag++;
-    }
-  } else {
-    for (let i = selectedCardIndex.length; i > 0; i--) {
-      locates.push({
-        x: tag * width * Resolution,
-        y: 0 * Resolution
-      });
-      tag++;
+      if (locates.length >= selectedCardIndex.length) {
+        break;
+      }
     }
   }
 
   let text = currentLuckys.map(item => item[1]);
-  addQipao(
-    `恭喜${text.join("、")}获得${currentPrize.title}, 新的一年必定旺旺旺。`
-  );
-
+  addQipao(`恭喜${text.join('、')}获得${currentPrize.title}, 新的一年必定旺旺旺。`);
   selectedCardIndex.forEach((cardIndex, index) => {
     changeCard(cardIndex, currentLuckys[index]);
     var object = threeDCards[cardIndex];
@@ -523,7 +524,7 @@ function selectCard(duration = 600) {
         {
           x: locates[index].x,
           y: locates[index].y * Resolution,
-          z: 2200
+          z: Math.max(1000, 2200 / (1 + (cardRowCount - 1) * 0.11)),
         },
         Math.random() * duration + duration
       )
@@ -535,15 +536,14 @@ function selectCard(duration = 600) {
         {
           x: 0,
           y: 0,
-          z: 0
+          z: 0,
         },
         Math.random() * duration + duration
       )
       .easing(TWEEN.Easing.Exponential.InOut)
       .start();
 
-    object.element.classList.add("prize");
-    tag++;
+    object.element.classList.add('prize');
   });
 
   new TWEEN.Tween(this)
@@ -568,12 +568,13 @@ function resetCard(duration = 500) {
     let object = threeDCards[index],
       target = targets.sphere[index];
 
+    console.info('ss');
     new TWEEN.Tween(object.position)
       .to(
         {
           x: target.position.x,
           y: target.position.y,
-          z: target.position.z
+          z: target.position.z,
         },
         Math.random() * duration + duration
       )
@@ -585,7 +586,7 @@ function resetCard(duration = 500) {
         {
           x: target.rotation.x,
           y: target.rotation.y,
-          z: target.rotation.z
+          z: target.rotation.z,
         },
         Math.random() * duration + duration
       )
@@ -601,7 +602,7 @@ function resetCard(duration = 500) {
       .onComplete(() => {
         selectedCardIndex.forEach(index => {
           let object = threeDCards[index];
-          object.element.classList.remove("prize");
+          object.element.classList.remove('prize');
         });
         resolve();
       });
@@ -609,15 +610,16 @@ function resetCard(duration = 500) {
 }
 
 /**
+ * 新的抽奖方式
+ */
+function lotteryNew() {
+  tweenRotate = rotateBallInfinity();
+}
+
+/**
  * 抽奖
  */
 function lottery() {
-  // if (isLotting) {
-  //   rotateObj.stop();
-  //   btns.lottery.innerHTML = "开始抽奖";
-  //   return;
-  // }
-  btns.lottery.innerHTML = "结束抽奖";
   rotateBall().then(() => {
     // 将之前的记录置空
     currentLuckys = [];
@@ -629,7 +631,7 @@ function lottery() {
       leftPrizeCount = currentPrize.count - (luckyData ? luckyData.length : 0);
 
     if (leftCount < perCount) {
-      addQipao("剩余参与抽奖人员不足，现在重新设置所有人员可以进行二次抽奖！");
+      addQipao('剩余参与抽奖人员不足，现在重新设置所有人员可以进行二次抽奖！');
       basicData.leftUsers = basicData.users.slice();
       leftCount = basicData.leftUsers.length;
     }
@@ -708,9 +710,7 @@ function random(num) {
 function changeCard(cardIndex, user) {
   let card = threeDCards[cardIndex].element;
 
-  card.innerHTML = `<div class="company">${COMPANY}</div><div class="name">${
-    user[1]
-  }</div><div class="details">${user[0] || ''}<br/>${user[2] || "PSST"}</div>`;
+  card.innerHTML = `<div class="company">${COMPANY}</div><div class="name">${user[1]}</div><div class="details">${user[0]}<br/>${user[2] || 'PSST'}</div>`;
 }
 
 /**
@@ -718,8 +718,7 @@ function changeCard(cardIndex, user) {
  */
 function shine(cardIndex, color) {
   let card = threeDCards[cardIndex].element;
-  card.style.backgroundColor =
-    color || "rgba(0,127,127," + (Math.random() * 0.7 + 0.25) + ")";
+  card.style.backgroundColor = color || 'rgba(0,127,127,' + (Math.random() * 0.7 + 0.25) + ')';
 }
 
 /**
@@ -752,17 +751,17 @@ function shineCard() {
 function setData(type, data) {
   return new Promise((resolve, reject) => {
     window.AJAX({
-      url: "/saveData",
+      url: '/saveData',
       data: {
         type,
-        data
+        data,
       },
       success() {
         resolve();
       },
       error() {
         reject();
-      }
+      },
     });
   });
 }
@@ -770,48 +769,48 @@ function setData(type, data) {
 function setErrorData(data) {
   return new Promise((resolve, reject) => {
     window.AJAX({
-      url: "/errorData",
+      url: '/errorData',
       data: {
-        data
+        data,
       },
       success() {
         resolve();
       },
       error() {
         reject();
-      }
+      },
     });
   });
 }
 
 function exportData() {
   window.AJAX({
-    url: "/export",
+    url: '/export',
     success(data) {
-      if (data.type === "success") {
+      if (data.type === 'success') {
         location.href = data.url;
       }
-    }
+    },
   });
 }
 
 function reset() {
   window.AJAX({
-    url: "/reset",
+    url: '/reset',
     success(data) {
-      console.log("重置成功");
-    }
+      console.log('重置成功');
+    },
   });
 }
 
 function createHighlight() {
-  let year = new Date().getFullYear() + "";
+  let year = new Date().getFullYear() + '';
   let step = 4,
     xoffset = 1,
     yoffset = 1,
     highlight = [];
 
-  year.split("").forEach(n => {
+  year.split('').forEach(n => {
     highlight = highlight.concat(
       NUMBER_MATRIX[n].map(item => {
         return `${item[0] + xoffset}-${item[1] + yoffset}`;
@@ -828,11 +827,11 @@ let onload = window.onload;
 window.onload = function () {
   onload && onload();
 
-  let music = document.querySelector("#music");
+  let music = document.querySelector('#music');
 
   let rotated = 0,
     stopAnimate = false,
-    musicBox = document.querySelector("#musicBox");
+    musicBox = document.querySelector('#musicBox');
 
   function animate() {
     requestAnimationFrame(function () {
@@ -840,14 +839,14 @@ window.onload = function () {
         return;
       }
       rotated = rotated % 360;
-      musicBox.style.transform = "rotate(" + rotated + "deg)";
+      musicBox.style.transform = 'rotate(' + rotated + 'deg)';
       rotated += 1;
       animate();
     });
   }
 
   musicBox.addEventListener(
-    "click",
+    'click',
     function (e) {
       if (music.paused) {
         music.play().then(
@@ -856,7 +855,7 @@ window.onload = function () {
             animate();
           },
           () => {
-            addQipao("背景音乐自动播放失败，请手动播放！");
+            addQipao('背景音乐自动播放失败，请手动播放！');
           }
         );
       } else {
